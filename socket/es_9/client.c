@@ -15,50 +15,33 @@
 #define DIMBUFF 512
 #define SERVER_PORT 40000
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-	if (argc != 4)
-	{
-		printf("Numero argomenti sbagliato\n");
-		exit(1);
-	}
 
-	struct sockaddr_in servizio;
-	int nread, socketfd;
-	char buff[1];
-	memset((char*)&servizio, 0, sizeof(servizio));
+    if (argc != 4)
+    {
+        printf("Numero argomenti sbagliato\n");
+        exit(1);
+    }
+    struct sockaddr_in servizio;
+    int nread, socketfd;
+    char buff[1];
+    memset((char *)&servizio, 0, sizeof(servizio));
 
-	servizio.sin_family = AF_INET;
-	servizio.sin_port = htons(atoi(argv[3]));
-	servizio.sin_addr.s_addr = inet_addr(argv[2]);
+    servizio.sin_family = AF_INET;
+    servizio.sin_port = htons(atoi(argv[3]));
+    servizio.sin_addr.s_addr = inet_addr(argv[2]);
 
-	socketfd = socket(AF_INET, SOCK_STREAM, 0);
+    socketfd = socket(AF_INET, SOCK_STREAM, 0);
+    connect(socketfd, (struct sockaddr *)&servizio, sizeof(servizio));
+    printf("Stabilita la connessione con il server..\n");
 
-	if (socketfd == -1)
-	{
-		perror("Errore nella creazione del socket");
-		exit(1);
-	}
+    write(socketfd, argv[1], strlen(argv[1]));
 
-	if (connect(socketfd, (struct sockaddr*)&servizio, sizeof(servizio)) == -1)
-	{
-		perror("Errore nella connessione al server");
-		close(socketfd);
-		exit(1);
-	}
-
-	printf("Stabilita la connessione con il server..\n");
-
-	write(socketfd, argv[1], strlen(argv[1]));
-
-	while ((nread = read(socketfd, buff, sizeof(buff)) > 0)
-	{
-		write(1, buff, nread);
-	}
-
-	printf("dopo il while ma prima della close\n");
-	close(socketfd);
-	printf("dopo la close\n");
-
-	return 0;
+    while (nread = read(socketfd, buff, sizeof(buff)) > 0)
+    {
+        write(1, buff, nread);
+    }
+    close(socketfd);
+    return 0;
 }

@@ -18,64 +18,50 @@
 int main(int argc, char *argv[])
 {
 
-    struct sockaddr_in servizio, rem_indirizzo;
-    int pid, nread, soa, socketfd, client_len, fd, on = 1, fromlen = sizeof(servizio);
+	struct sockaddr_in servizio, rem_indirizzo;
+	int pid, nread, soa, socketfd, client_len, fd, on = 1, fromlen = sizeof(servizio);
 
-    memset((char *)&servizio, 0, sizeof(servizio));
+	memset((char *)&servizio, 0, sizeof(servizio));
 
-    servizio.sin_family = AF_INET;
-    servizio.sin_addr.s_addr = htonl(INADDR_ANY);
-    servizio.sin_port = htons(SERVER_PORT);
+	servizio.sin_family = AF_INET;
+	servizio.sin_addr.s_addr = htonl(INADDR_ANY);
+	servizio.sin_port = htons(SERVER_PORT);
 
-    socketfd = socket(AF_INET, SOCK_STREAM, 0);
+	socketfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-    bind(socketfd, (struct sockaddr *)&servizio, sizeof(servizio));
+	// Bind
+	setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+	bind(socketfd, (struct sockaddr *)&servizio, sizeof(servizio));
 
-    listen(socketfd, 10);
+	listen(socketfd, 10);
 
-    for (;;)
-    {
-        printf("\n\nServer in ascolto...\n");
-        fflush(stdout);
+	// attesa del client
+	for (;;)
+	{
+		printf("\n\nServer in ascolto...\n");
+		fflush(stdout);
+		
+		soa = accept(socketfd, (struct sockaddr *)&rem_indirizzo, &fromlen);
+		if(soa!=-1)
+		{
+			pid = fork();
 
-        soa = accept(socketfd, (struct sockaddr *)&rem_indirizzo, &fromlen);
-
-        if (pid == 0)
-        {
-            char nome_file[256];
-            ssize_t nread = read(soa, nome_file, sizeof(nome_file));
-
-            if (nread < 0)
-            {
-                perror("Errore nella lettura del nome del file");
-                close(soa);
-                exit(1);
-            }
-
-            nome_file[nread] = '\0';
-            printf("Richiesta del file: %s\n", nome_file);
-
-            close(socketfd);
-
-            if (dup2(soa, 1) == -1)
-            {
-                perror("Errore nel redirect dell'output verso il socket");
-                close(soa);
-                exit(1);
-            }
-
-            close(soa);
-
-            if (execl("/bin/cat", "cat", nome_file, NULL) == -1)
-            {
-                perror("Errore nell'esecuzione di execl");
-                exit(1);
-            }
-        }
-
-        close(socketfd);
-    }
-
-    return 0;
+			if (pid == 0)
+			{
+				char nome_file[20];
+				close(socketfd);
+				read(soa, nome_file, sizeof(nome_file));
+				printf("invio nome file: %s\n", nome_file);
+				fflush(stdout);
+				close(1);
+				dup(soa);
+				close(soa);
+				execl("/usr/bin/cat", "cat", nome_file, (char *)0);
+				return -1;
+			}
+		}
+	}
+	close(socketfd);
+	
+	return 0;
 }
